@@ -4,6 +4,8 @@ import { commandExit } from './command_exit.js';
 import { commandHelp } from './command_help.js';
 import { commandMap } from './command_map.js';
 import { commandMapb } from './command_mapb.js';
+import { commandExplore } from './command_explore.js';
+import { commandCatch } from './command_catch.js';
 import { CLICommand, State, initState } from "./state.js";
 
 export function cleanInput(input: string): string[] {
@@ -31,6 +33,16 @@ export function getCommands(): Record<string, CLICommand> {
       name: "mapb",
       description: "Displays previous 20 map locations",
       callback: commandMapb,
+    },
+    explore: {
+      name: "explore",
+      description: "Displays pokemon in an area",
+      callback: commandExplore,
+    },
+    catch: {
+      name: "catch",
+      description: "Tries to capture a pokemon",
+      callback: commandCatch,
     }
   };
 }
@@ -43,7 +55,12 @@ export function startREPL(state: State): void {
             try {
                 const callback = getCommands()[words[0]].callback;
                 try {
-                    const foo = await callback(state);
+                    if (words.length > 1) {
+                        const args = words.slice(1);
+                        const foo = await callback(state, ...args);
+                    } else {
+                        const foo = await callback(state);
+                    }
                 } catch (err) {
                     console.log(`An error occurred: ${err}`);
                 }

@@ -3,7 +3,7 @@ import { Cache } from "./pokecache.js";
 
 export class PokeAPI {
   private static readonly baseURL = "https://pokeapi.co/api/v2";
-  #cache = new Cache(30);
+  #cache = new Cache(1000);
 
   constructor() {}
 
@@ -15,7 +15,6 @@ export class PokeAPI {
             } else {
                 activeURL = `${PokeAPI.baseURL}/location-area/`;
             }
-            console.log(activeURL);
             let response: (Response | undefined) = this.#cache.get(activeURL);
             if (response === undefined) {
                 response = await fetch(activeURL);
@@ -29,8 +28,12 @@ export class PokeAPI {
             const prevurl = result.previous;
             const raw = result.results;
             const data: Location[] = result.results;
+            const betterdata: Location[] = [];
+            for (let i = 0; i < 20; i++) {
+                betterdata.push(await this.fetchLocation(result.results[i].name));
+            }
 
-            return { prior: prevurl, next: nexturl, locations: data};
+            return { prior: prevurl, next: nexturl, locations: betterdata};
         } catch (err) {
             console.log(err);
             throw new Error("Unable to fetch");
@@ -38,18 +41,46 @@ export class PokeAPI {
   }
 
   async fetchLocation(locationName: string): Promise<Location> {
+    try {
       const activeURL = `${PokeAPI.baseURL}/location-area/${locationName}`;
-      try {
-          const response = await fetch(activeURL);
-          if (!response.ok) {
-              throw new Error(`Response status ${response.status}`);
-          }
-          const result = await response.json();
-          const fake: Location = { name: "TBD", url: "TBD" };
-          return fake;
-      } catch (err) {
-          throw new Error("Unable to fetch");
+      let response: (Response | undefined) = this.#cache.get(activeURL);
+      if (response === undefined) {
+        response = await fetch(activeURL);
+        if (!response.ok) {
+          throw new Error(`Response status: ${response.status}`);
+        }
+        this.#cache.add(activeURL, response);
       }
+      const result = await response.json();
+      let pokestring = "";
+      for (const pokemon of result.pokemon_encounters) {
+          pokestring += ` - ${pokemon.pokemon.name}\n`;
+      }
+
+      return { name: locationName, url: pokestring };
+    } catch (err) {
+        console.log(err);
+        throw new Error("Unable to fetch");
+    }
+  }
+
+  async fetchPokemon(pokemonName: string): Promise<Pokemon> {
+    try {
+        const activeURL = `${PokeAPI.baseURL}/pokemon/${pokemonName}`;
+        let response: (Response | undefined) = this.#cache.get(activeURL);
+        if (response === undefined) {
+            response = await fetch(activeURL);
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+            this.#cache.add(activeURL, response);
+        }
+        const result = await response.json();
+        return { name: pokemonName, baseExperience: result.base_experience };
+    } catch (err) {
+        console.log(err);
+        throw new Error("Unable to fetch");
+    }
   }
 }
 
@@ -63,3 +94,8 @@ export type Location = {
     name: string;
     url: string;
 };
+
+export type Pokemon = {
+    name: string;
+    baseExperience: number;
+}
