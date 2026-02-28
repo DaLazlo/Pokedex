@@ -76,7 +76,12 @@ export class PokeAPI {
             this.#cache.add(activeURL, response);
         }
         const result = await response.json();
-        return { name: pokemonName, baseExperience: result.base_experience };
+        return {    name: pokemonName, 
+                    baseExperience: result.base_experience, 
+                    height: result.height, 
+                    weight: result.weight, 
+                    stats: result.stats,
+                    types: result.types };
     } catch (err) {
         console.log(err);
         throw new Error("Unable to fetch");
@@ -98,4 +103,8 @@ export type Location = {
 export type Pokemon = {
     name: string;
     baseExperience: number;
+    height: number;
+    weight: number;
+    stats: { base_stat: number; effort: number; stat: { name: string; url: string; }}[];
+    types: { slot: number; type: { name: string; url: string; }; }[];
 }

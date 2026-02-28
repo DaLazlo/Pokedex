@@ -13,6 +13,6 @@ export async function commandCatch(state: State, ...args: string[]) {
         console.log(`${args[0]} was caught!`);
         state.pokedex[args[0]] = result;
     } else {
-        console.log('${args[0] escaped!');
+        console.log('${args[0]} escaped!');
     }
 }
